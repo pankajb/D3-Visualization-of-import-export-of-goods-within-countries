@@ -1,0 +1,420 @@
+<html>
+  <head> 
+  
+    <title>Pankaj_B</title>
+    <script src="scripts/d3.v3.min.js" charset="utf-8"></script>
+    <link rel="stylesheet" type="text/css" href="scripts/stylesheet.css">
+	<script src="http://d3js.org/topojson.v1.min.js"></script>
+	 <!-- I recommend you host this file on your own, since this will change without warning -->
+	<script src="resources/data.js"></script>
+  
+  </head>
+  
+  <body>
+	<!-- <script src="scripts/index.js" charset="utf-8"></script> -->
+	<h1 style="margin-left:auto; margin-right:auto; width:900px;">Visualization of import/export of goods within countries</h1>
+	
+ 	<form action="" style="margin-left:auto; margin-right:auto;width:900px;">
+	<input type="radio" name="i/e" value="Imports" checked=true id="import">Imports &nbsp&nbsp
+	<input type="radio" name="i/e" value="Exports">Exports
+	</form>
+	
+	<div id="container1" style="position: relative; width:700px; max-height: 500px; margin-left:auto; margin-right:auto;"></div>
+	<div style="width: 100%; display: table; margin-left:auto; margin-right:auto;">
+		<div style="display: table-row; ">
+			<div style=" display: table-cell;"><form name="tableForm" style="float:left">   <div id="wrapper"></div></form> </div>
+			<div style="display: table-cell;" id="viz"></div> 
+		</div>
+	</div>
+     
+	 <div style=" margin-left:450px; width:500px;">
+		  <h5><span style="background-color:#1F77B4">&nbsp&nbsp&nbsp&nbsp</span>&nbsp 2005 </h5>
+		  <h5><span style="background-color:#ADC6E7">&nbsp&nbsp&nbsp&nbsp</span>&nbsp 2006</h5>
+		  <h5><span style="background-color:#FC8012">&nbsp&nbsp&nbsp&nbsp</span>&nbsp 2007</h5>
+	</div>
+	
+	<div id="pie" style=" width:500px; margin-top:100px; margin-left:auto; margin-right:auto; "></div>
+	<p id="pietext" style="  margin-left:auto; margin-right:auto; width:500px; margin-top:-80px;"></p>
+     
+	<script>
+	
+ var matrix = new Array(); 
+
+ var xhReq = new XMLHttpRequest();
+xhReq.open("GET", "resources/d.json", false);
+xhReq.send(null);
+var countryDataforPath = JSON.parse(xhReq.responseText);
+	
+
+       //basic map config with custom fills, mercator projection
+      var map = new Datamap({
+        scope: 'world',
+        element: document.getElementById('container1'),
+        projection: 'mercator',
+      
+        fills: {
+          defaultFill: '#606060',
+          lt50: 'rgba(0,244,244,0.9)',
+          gt50: 'blue'
+        },
+        
+        data: {
+        /*  USA: {fillKey: 'lt50' },
+          RUS: {fillKey: 'lt50' },
+          CAN: {fillKey: 'lt50' },
+          BRA: {fillKey: 'gt50' },
+          ARG: {fillKey: 'gt50'},
+          COL: {fillKey: 'gt50' },
+          AUS: {fillKey: 'gt50' },
+          ZAF: {fillKey: 'gt50' },
+          MAD: {fillKey: 'gt50' }     */  
+        },
+		
+		geographyConfig: {
+            popupTemplate: function(geo, data) {
+		
+			 for(var k=0;k<243;k++) {
+  if(geo.id==countryDataforPath.data[k][10])
+ { 
+ 
+ draw(countryDataforPath.data[k][12],countryDataforPath.data[k][13]);
+ return "<div class='hoverinfo'>This is " + geo.properties.name + " which exports worth of " + getImportExportDetails(countryDataforPath.data[k][9]) + " goods annually.</div>";	}
+}
+				
+					
+					
+			   
+			// draw();
+			 
+			
+              
+						
+            }
+			
+        }
+      })
+      
+	function getImportExportDetails(country){
+	if(document.getElementById("import").checked)
+	var url="http://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20html%20where%20url%3D%22http%3A%2F%2Fwww.indexmundi.com%2Ftrade%2Fimports%2F%3Fcountry%3D"+country+"%22%20and%20xpath%3D'%2F%2F*%5B%40id%3D%22gvDataNew%22%5D'&format=json&diagnostics=true&callback=";
+	else
+	var url="http://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20html%20where%20url%3D%22http%3A%2F%2Fwww.indexmundi.com%2Ftrade%2Fexports%2F%3Fcountry%3D"+country+"%22%20and%20xpath%3D'%2F%2F*%5B%40id%3D%22gvDataNew%22%5D'&format=json&diagnostics=true&callback=";
+//	var url="http://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20html%20where%20url%3D%22http%3A%2F%2Fwww.indexmundi.com%2Ftrade%2Fexports%2F%3Fcountry%3D"+country+"%22%20and%20xpath%3D'%2F%2F*%5B%40id%3D%22gvDataNew%22%5D%2Ftr%5B2%5D%2Ftd%5B2%5D'&format=json&diagnostics=true&callback="
+	
+	
+	
+	var countryExport = new XMLHttpRequest();
+	countryExport.open("GET", url, false);
+	countryExport.send(null);
+	var countryImportExport = JSON.parse(countryExport.responseText);
+	drawBarChart(countryImportExport);
+	insertTable(countryImportExport);	
+	//console.log(countryImportExport);
+	console.log(countryImportExport.query.results);
+	
+	return countryImportExport.query.results.table.tr[23].td[1].strong;	
+	
+	}	
+	
+	function redraw(){
+	
+	 map.arc([0]).remove();
+	 
+	 };
+	
+	// code from git hub to draw stack bar chart
+	
+	  function drawBarChart(tableData)
+	 {
+	 
+	 
+	 console.log(tableData.query.results.table.tr[1].td[0].a.content);
+	 var length=tableData.query.results.table.tr.length;
+	 var length_td=tableData.query.results.table.tr[0].th.length;
+	 var data1 = new Array(); 
+	 var data2 = new Array(); 
+	 var data3 = new Array(); 
+	 var data4 = new Array(); 
+	
+	 var temp = new Array(); 
+	
+	for(var i=1;i<length-1;i++)
+	{
+	data1[i]=tableData.query.results.table.tr[i].td[0].a.content;
+	data2[i]=parseInt(tableData.query.results.table.tr[i].td[1].p.replace("$","").replace(/,/g,""));
+	data3[i]=parseInt(tableData.query.results.table.tr[i].td[2].p.replace("$","").replace(/,/g,""));
+	data4[i]=parseInt(tableData.query.results.table.tr[i].td[3].p.replace("$","").replace(/,/g,""));
+	
+	
+	matrix[i-1]=[data1[i],data2[i],data3[i],data4[i]];
+	}
+	console.log(matrix);
+	//console.log(data1);console.log(data2);console.log(data3);console.log(data4);
+	
+	
+	
+		d3.selectAll("#removing").remove(); 
+	
+	 var w = 934,
+            h = 1000
+ 
+            // create canvas
+            var svg = d3.select("#viz").append("svg:svg")
+            .attr("class", "chart")
+			.attr("id","removing")
+            .attr("width", w)
+            .attr("height", h )
+            .append("svg:g")
+            .attr("transform", "translate(160,100)");
+ 
+            x = d3.scale.ordinal().rangeRoundBands([0, w-50], .1)
+            y = d3.scale.linear().range([0, h-50])
+            z = d3.scale.category20()
+ 
+            console.log("RAW MATRIX---------------------------");
+        // 4 columns: ID,c1,c2,c3
+		
+		
+		
+           
+            console.log(matrix)
+ 
+            console.log("REMAP---------------------------");
+            var remapped =["c1","c2","c3"].map(function(dat,i){
+                return matrix.map(function(d,ii){
+                    return {x: ii, y: d[i+1] };
+                })
+            });
+            console.log(remapped)
+ 
+            console.log("LAYOUT---------------------------");
+            var stacked = d3.layout.stack()(remapped)
+            console.log(stacked)
+ 
+           x.domain(stacked[0].map(function(d,i) { return d.x;}));
+            y.domain([0, d3.max(stacked[stacked.length - 1], function(d) { return d.y0 + d.y; })]);
+ 
+            // show the domains of the scales
+            console.log("x.domain(): " + x.domain())
+            console.log("y.domain(): " + y.domain())
+            console.log("------------------------------------------------------------------");
+ 
+            // Add a group for each column.
+	
+            var valgroup = svg.selectAll("g.valgroup")
+            .data(stacked)
+            .enter().append("svg:g")
+            .attr("class", "valgroup")
+			
+			.attr("transform", "rotate(90)")
+			
+            .style("fill", function(d, i) { return z(i); })
+            .style("stroke", function(d, i) { return d3.rgb(z(i)).darker(); })
+		//	.on("mouseover", function(d,i){return tooltip.style("visibility", "visible");})
+		//	.on("mousemove", function(){return tooltip.style("top", (event.pageY-10)+"px").style("left",(event.pageX+10)+"px");})
+		//	.on("mouseout", function(d,i){return tooltip.style("visibility", "hidden");})
+		;
+		
+
+ 
+ 
+		
+		
+		
+            // Add a rect for each date.
+            var rect = valgroup.selectAll("rect")
+            .data(function(d){return d;})
+            .enter().append("svg:rect")
+			
+            .attr("x", function(d) { return x(d.x); })
+            .attr("y", function(d) { return -y(d.y0) - y(d.y); })
+            .attr("height", function(d) { return y(d.y); })
+            .attr("width", x.rangeBand());
+			
+			
+			
+			/*var tooltip = d3.select("body")
+			.append("div")
+			.style("position", "absolute")
+			.style("z-index", "10")
+			.style("visibility", "hidden")
+			.html(function(d,i){return "<strong>$:</strong> <span style='color:red'>" + d + "</span>";});
+			
+		*/
+ 
+
+	 };
+	 
+      function draw(lat,log){
+	  var random = Math.floor((Math.random()*243)+1);
+	  var random1 = Math.floor((Math.random()*243)+1);
+	  var random2 = Math.floor((Math.random()*243)+1);
+	  var random3 = Math.floor((Math.random()*243)+1);
+	  var random4 = Math.floor((Math.random()*243)+1);
+		  
+		/*  console.log(countryDataforPath.data[random][8]);  console.log(countryDataforPath.data[random1][8]);  console.log(countryDataforPath.data[random2][8]); 
+		   console.log(countryDataforPath.data[random3][8]); console.log(countryDataforPath.data[random4][8]);*/
+      //sample of the arc plugin
+      map.arc([
+       {
+        origin: {
+            latitude: lat,
+            longitude: log
+        },
+        destination: {
+            latitude: countryDataforPath.data[random][12],
+            longitude: countryDataforPath.data[random][13]
+        }
+      },
+	   {
+        origin: {
+            latitude: lat,
+            longitude: log
+        },
+        destination: {
+            latitude: countryDataforPath.data[random1][12],
+            longitude: countryDataforPath.data[random1][13]
+        }
+      },
+	   {
+        origin: {
+            latitude: lat,
+            longitude: log
+        },
+        destination: {
+            latitude: countryDataforPath.data[random2][12],
+            longitude: countryDataforPath.data[random2][13]
+        }
+      },
+	   {
+        origin: {
+            latitude: lat,
+            longitude: log
+        },
+        destination: {
+            latitude: countryDataforPath.data[random3][12],
+            longitude: countryDataforPath.data[random3][13]
+        }
+      },
+	   {
+        origin: {
+            latitude: lat,
+            longitude: log
+        },
+        destination: {
+            latitude: countryDataforPath.data[random4][12],
+            longitude: countryDataforPath.data[random4][13]
+        }
+      }
+      ], {strokeWidth: 2});
+   
+   
+  
+      };
+	  
+	  
+       //bubbles, custom popup on hover template
+      map.bubbles([
+     /*  {name: 'Hot', latitude: 21.32, longitude: 5.32, radius: 10, fillKey: 'gt50'},
+       {name: 'Chilly', latitude: -25.32, longitude: 120.32, radius: 18, fillKey: 'lt50'},
+       {name: 'Hot again', latitude: 21.32, longitude: -84.32, radius: 8, fillKey: 'gt50'},*/
+
+     ], {
+       popupTemplate: function(geo, data) {
+	
+         return "<div class='hoverinfo'>It is " + data.name + "</div>";
+		
+       }
+     }); 
+	
+
+function insertTable(tableData)
+
+{
+console.log(tableData.query.results.table.tr);
+    
+	var num_rows = tableData.query.results.table.tr.length;
+    var num_cols = 1;
+    var width = 150;
+    var theader = "<table id='table1'  width = ' "+ width +"% '>";
+    var tbody = "";
+
+    for(var j = 0; j < num_cols; j++)
+    {
+  //    theader += "<th>header col "+ (j+1) +" </th>";
+    }
+
+    for(var i = 1; i < num_rows-1; i++)
+    {
+        tbody += "<tr height=40 id="+i+">";
+        for(var j = 0; j < num_cols; j++)
+        {
+			
+            tbody += "<td>";
+            tbody += "<a href='#' onclick='drawPieChart(\""+i+"\");return false;'>"+tableData.query.results.table.tr[i].td[0].a.content.substring(0,25)+"</a>"; 
+            tbody += "</td>"
+        }
+        tbody += "</tr><br />";
+    }
+    var tfooter = "</table>";
+    document.getElementById('wrapper').innerHTML = theader + tbody + tfooter;
+}	
+
+// code from git hub to draw pie chart	 
+ function drawPieChart(number)
+{
+document.getElementById('pietext').innerHTML = matrix[number-1][0];
+ 
+ var w = 500,                        //width
+    h = 500,                            //height
+    r = 200,                            //radius
+    color = d3.scale.category20();     //builtin range of colors
+ 
+    data = [{"label":"$"+matrix[number-1][1]+"", "value":matrix[number-1][1]}, 
+            {"label":"$"+matrix[number-1][2]+"", "value":matrix[number-1][2]}, 
+            {"label":"$"+matrix[number-1][3]+"", "value":matrix[number-1][3]}];
+    
+    var vis = d3.select("#pie")
+        .append("svg:svg")              //create the SVG element inside the <body>
+        .data([data])                   //associate our data with the document
+            .attr("width", w)           //set the width and height of our visualization (these will be attributes of the <svg> tag
+            .attr("height", h)
+        .append("svg:g")                //make a group to hold our pie chart
+            .attr("transform", "translate(" + r + "," + r + ")")    //move the center of the pie chart from 0, 0 to radius, radius
+ 
+    var arc = d3.svg.arc()              //this will create <path> elements for us using arc data
+        .outerRadius(r);
+ 
+    var pie = d3.layout.pie()           //this will create arc data for us given a list of values
+        .value(function(d) { return d.value; });    //we must tell it out to access the value of each element in our data array
+ 
+    var arcs = vis.selectAll("g.slice")     //this selects all <g> elements with class slice (there aren't any yet)
+        .data(pie)                          //associate the generated pie data (an array of arcs, each having startAngle, endAngle and value properties) 
+        .enter()                            //this will create <g> elements for every "extra" data element that should be associated with a selection. The result is creating a <g> for every object in the data array
+            .append("svg:g")                //create a group to hold each slice (we will have a <path> and a <text> element associated with each slice)
+                .attr("class", "slice");    //allow us to style things in the slices (like text)
+ 
+        arcs.append("svg:path")
+                .attr("fill", function(d, i) { return color(i); } ) //set the color for each slice to be chosen from the color function defined above
+                .attr("d", arc);                                    //this creates the actual SVG path using the associated data (pie) with the arc drawing function
+ 
+        arcs.append("svg:text")                                     //add a label to each slice
+                .attr("transform", function(d) {                    //set the label's origin to the center of the arc
+                //we have to make sure to set these before calling arc.centroid
+                d.innerRadius = 0;
+                d.outerRadius = r;
+                return "translate(" + arc.centroid(d) + ")";        //this gives us a pair of coordinates like [50, 50]
+            })
+            .attr("text-anchor", "middle")                          //center the text on it's origin
+            .text(function(d, i) { return data[i].label; });        //get the label from our original data array
+        }  
+			
+		
+
+	 </script>
+
+
+  
+  </body>
+  
+</html>
