@@ -28,9 +28,9 @@
 	</div>
      
 	 <div style=" margin-left:450px; width:500px;">
-		  <h5><span style="background-color:#1F77B4">&nbsp&nbsp&nbsp&nbsp</span>&nbsp 2005 </h5>
-		  <h5><span style="background-color:#ADC6E7">&nbsp&nbsp&nbsp&nbsp</span>&nbsp 2006</h5>
-		  <h5><span style="background-color:#FC8012">&nbsp&nbsp&nbsp&nbsp</span>&nbsp 2007</h5>
+		  <h5><span style="background-color:#1F77B4"></span>&nbsp 2005 </h5>
+		  <h5><span style="background-color:#ADC6E7"></span>&nbsp 2006</h5>
+		  <h5><span style="background-color:#FC8012"></span>&nbsp 2007</h5>
 	</div>
 	
 	<div id="pie" style=" width:500px; margin-top:100px; margin-left:auto; margin-right:auto; "></div>
@@ -72,7 +72,7 @@ var countryDataforPath = JSON.parse(xhReq.responseText);
 		
 		geographyConfig: {
             popupTemplate: function(geo, data) {
-		
+		// Data of 243 countries
 			 for(var k=0;k<243;k++) {
   if(geo.id==countryDataforPath.data[k][10])
  { 
@@ -80,24 +80,16 @@ var countryDataforPath = JSON.parse(xhReq.responseText);
  draw(countryDataforPath.data[k][12],countryDataforPath.data[k][13]);
  return "<div class='hoverinfo'>This is " + geo.properties.name + " which exports worth of " + getImportExportDetails(countryDataforPath.data[k][9]) + " goods annually.</div>";	}
 }
-				
 					
-					
-			   
-			// draw();
-			 
-			
-              
-						
             }
 			
         }
       })
-      
+      //Fetch data from website using YQL
 	function getImportExportDetails(country){
-	if(document.getElementById("import").checked)
+	if(document.getElementById("import").checked)  // if import is checked
 	var url="http://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20html%20where%20url%3D%22http%3A%2F%2Fwww.indexmundi.com%2Ftrade%2Fimports%2F%3Fcountry%3D"+country+"%22%20and%20xpath%3D'%2F%2F*%5B%40id%3D%22gvDataNew%22%5D'&format=json&diagnostics=true&callback=";
-	else
+	else   // fetch export data
 	var url="http://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20html%20where%20url%3D%22http%3A%2F%2Fwww.indexmundi.com%2Ftrade%2Fexports%2F%3Fcountry%3D"+country+"%22%20and%20xpath%3D'%2F%2F*%5B%40id%3D%22gvDataNew%22%5D'&format=json&diagnostics=true&callback=";
 //	var url="http://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20html%20where%20url%3D%22http%3A%2F%2Fwww.indexmundi.com%2Ftrade%2Fexports%2F%3Fcountry%3D"+country+"%22%20and%20xpath%3D'%2F%2F*%5B%40id%3D%22gvDataNew%22%5D%2Ftr%5B2%5D%2Ftd%5B2%5D'&format=json&diagnostics=true&callback="
 	
@@ -122,6 +114,56 @@ var countryDataforPath = JSON.parse(xhReq.responseText);
 	 
 	 };
 	
+	// code from git hub to draw pie chart	 
+ function drawPieChart(number)
+{
+document.getElementById('pietext').innerHTML = matrix[number-1][0];
+ 
+ var w = 500,                        //width
+    h = 500,                            //height
+    r = 200,                            //radius
+    color = d3.scale.category20();     //builtin range of colors
+ 
+    data = [{"label":"$"+matrix[number-1][1]+"", "value":matrix[number-1][1]}, 
+            {"label":"$"+matrix[number-1][2]+"", "value":matrix[number-1][2]}, 
+            {"label":"$"+matrix[number-1][3]+"", "value":matrix[number-1][3]}];
+    
+    var vis = d3.select("#pie")
+        .append("svg:svg")              //create the SVG element inside the <body>
+        .data([data])                   //associate our data with the document
+            .attr("width", w)           //set the width and height of our visualization (these will be attributes of the <svg> tag
+            .attr("height", h)
+        .append("svg:g")                //make a group to hold our pie chart
+            .attr("transform", "translate(" + r + "," + r + ")")    //move the center of the pie chart from 0, 0 to radius, radius
+ 
+    var arc = d3.svg.arc()              //this will create <path> elements for us using arc data
+        .outerRadius(r);
+ 
+    var pie = d3.layout.pie()           //this will create arc data for us given a list of values
+        .value(function(d) { return d.value; });    //we must tell it out to access the value of each element in our data array
+ 
+    var arcs = vis.selectAll("g.slice")     //this selects all <g> elements with class slice (there aren't any yet)
+        .data(pie)                          //associate the generated pie data (an array of arcs, each having startAngle, endAngle and value properties) 
+        .enter()                            //this will create <g> elements for every "extra" data element that should be associated with a selection. The result is creating a <g> for every object in the data array
+            .append("svg:g")                //create a group to hold each slice (we will have a <path> and a <text> element associated with each slice)
+                .attr("class", "slice");    //allow us to style things in the slices (like text)
+ 
+        arcs.append("svg:path")
+                .attr("fill", function(d, i) { return color(i); } ) //set the color for each slice to be chosen from the color function defined above
+                .attr("d", arc);                                    //this creates the actual SVG path using the associated data (pie) with the arc drawing function
+ 
+        arcs.append("svg:text")                                     //add a label to each slice
+                .attr("transform", function(d) {                    //set the label's origin to the center of the arc
+                //we have to make sure to set these before calling arc.centroid
+                d.innerRadius = 0;
+                d.outerRadius = r;
+                return "translate(" + arc.centroid(d) + ")";        //this gives us a pair of coordinates like [50, 50]
+            })
+            .attr("text-anchor", "middle")                          //center the text on it's origin
+            .text(function(d, i) { return data[i].label; });        //get the label from our original data array
+        }  
+		
+		
 	// code from git hub to draw stack bar chart
 	
 	  function drawBarChart(tableData)
@@ -152,7 +194,7 @@ var countryDataforPath = JSON.parse(xhReq.responseText);
 	//console.log(data1);console.log(data2);console.log(data3);console.log(data4);
 	
 	
-	
+	// Remaping fetched data to pass to D3.js 
 		d3.selectAll("#removing").remove(); 
 	
 	 var w = 934,
@@ -360,55 +402,7 @@ console.log(tableData.query.results.table.tr);
     document.getElementById('wrapper').innerHTML = theader + tbody + tfooter;
 }	
 
-// code from git hub to draw pie chart	 
- function drawPieChart(number)
-{
-document.getElementById('pietext').innerHTML = matrix[number-1][0];
- 
- var w = 500,                        //width
-    h = 500,                            //height
-    r = 200,                            //radius
-    color = d3.scale.category20();     //builtin range of colors
- 
-    data = [{"label":"$"+matrix[number-1][1]+"", "value":matrix[number-1][1]}, 
-            {"label":"$"+matrix[number-1][2]+"", "value":matrix[number-1][2]}, 
-            {"label":"$"+matrix[number-1][3]+"", "value":matrix[number-1][3]}];
-    
-    var vis = d3.select("#pie")
-        .append("svg:svg")              //create the SVG element inside the <body>
-        .data([data])                   //associate our data with the document
-            .attr("width", w)           //set the width and height of our visualization (these will be attributes of the <svg> tag
-            .attr("height", h)
-        .append("svg:g")                //make a group to hold our pie chart
-            .attr("transform", "translate(" + r + "," + r + ")")    //move the center of the pie chart from 0, 0 to radius, radius
- 
-    var arc = d3.svg.arc()              //this will create <path> elements for us using arc data
-        .outerRadius(r);
- 
-    var pie = d3.layout.pie()           //this will create arc data for us given a list of values
-        .value(function(d) { return d.value; });    //we must tell it out to access the value of each element in our data array
- 
-    var arcs = vis.selectAll("g.slice")     //this selects all <g> elements with class slice (there aren't any yet)
-        .data(pie)                          //associate the generated pie data (an array of arcs, each having startAngle, endAngle and value properties) 
-        .enter()                            //this will create <g> elements for every "extra" data element that should be associated with a selection. The result is creating a <g> for every object in the data array
-            .append("svg:g")                //create a group to hold each slice (we will have a <path> and a <text> element associated with each slice)
-                .attr("class", "slice");    //allow us to style things in the slices (like text)
- 
-        arcs.append("svg:path")
-                .attr("fill", function(d, i) { return color(i); } ) //set the color for each slice to be chosen from the color function defined above
-                .attr("d", arc);                                    //this creates the actual SVG path using the associated data (pie) with the arc drawing function
- 
-        arcs.append("svg:text")                                     //add a label to each slice
-                .attr("transform", function(d) {                    //set the label's origin to the center of the arc
-                //we have to make sure to set these before calling arc.centroid
-                d.innerRadius = 0;
-                d.outerRadius = r;
-                return "translate(" + arc.centroid(d) + ")";        //this gives us a pair of coordinates like [50, 50]
-            })
-            .attr("text-anchor", "middle")                          //center the text on it's origin
-            .text(function(d, i) { return data[i].label; });        //get the label from our original data array
-        }  
-			
+	
 		
 
 	 </script>
